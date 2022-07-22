@@ -17,7 +17,7 @@ versions:
 
 - Greater control over the page properties you send.
 - Send events specific to individual pages.
-- Select by name the specific to send.
+- Select by name the specific user properties or custom events to send.
 
 
 ## Getting started
