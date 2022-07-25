@@ -17,7 +17,7 @@ If you want to use FullStory’s tagless autocapture, use the [FullStory Device 
 The FullStory cloud mode destination sends information about your users and related events to FullStory. It uses [FullStory’s REST APIs](https://developer.fullstory.com).
 
 - **Identify User:** Converts Segment [Identify](https://segment.com/docs/connections/spec/identify/) calls to [FullStory Set User Properties API calls](https://developer.fullstory.com/set-user-properties). Use this to set custom attributes which can be used to search and segment within FullStory.
-- **Track Custom Event**: Converts Segment [Track](https://segment.com/docs/connections/spec/track/) calls to FullStory custom event API calls. Use this to capture more context about your user’s experience on your site or to capture user’s actions in other applications to build a more complete understanding of your user’s overall experience.
+- **Track Custom Event**: Converts Segment [Track](https://segment.com/docs/connections/spec/track/) calls to [FullStory custom event API calls](https://developer.fullstory.com/server-events). Use this to capture more context about your user’s experience on your site or to capture user’s actions in other applications to build a more complete understanding of your user’s overall experience.
 
 ### Benefits of FullStory Cloud Mode (Actions)
 
