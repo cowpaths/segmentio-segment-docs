@@ -27,7 +27,12 @@ The following response indicates that Bob is indeed a high-value user:
 }
 ```
 
-For more information on profile queries, visit the [Profile API documentation](/docs/profiles/profile-api).
+For more information on profile queries, visit the [Profile API documentation](/docs/unify/profile-api).
+
+## Can I modify audience keys?
+
+You can't change the audience key after it's created. To change the key, you need to re-create the audience.
+ 
 
 ## Can I reuse audience keys?
 

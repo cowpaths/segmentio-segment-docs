@@ -13,9 +13,9 @@ PAPI_URL = "https://api.segmentapis.com"
 
 const regionalSupport = yaml.load(fs.readFileSync(path.resolve(__dirname, `../src/_data/regional-support.yml`)))
 const slugOverrides = yaml.load(fs.readFileSync(path.resolve(__dirname, `../src/_data/catalog/slugs.yml`)))
+const testSources = yaml.load(fs.readFileSync(path.resolve(__dirname, `../src/_data/catalog/test_sources.yml`)))
 
-
-const slugify = (displayName) => {
+const slugify = (displayName, type) => {
   let slug = displayName
     .toLowerCase()
     .replace(/\s+/g, '-')
@@ -24,16 +24,24 @@ const slugify = (displayName) => {
     .replace(/[\(\)]/g, '')
     .replace('.', '-')
 
-  for (key in slugOverrides) {
-    let original = slugOverrides[key].original
-    let override = slugOverrides[key].override
+  let overrides = ""
+  if (type == "sources") {
+    overrides = slugOverrides.sources
+  }
+
+  if (type == "destinations") {
+    overrides = slugOverrides.destinations
+  }
+
+  for (key in overrides) {
+    let original = overrides[key].original
+    let override = overrides[key].override
 
     if (slug == original) {
       console.log(original + " -> " + override)
       slug = override
     }
   }
-
   return slug
 }
 
@@ -71,41 +79,56 @@ const getConnectionModes = (destination) => {
       server: false
     },
   }
-  destination.components.forEach(component => {
-    switch (component.type) {
-      case 'IOS':
-        connectionModes.device.mobile = true
-        break
-      case 'ANDROID':
-        connectionModes.device.mobile = true
-        break
-      case 'BROWSER':
-        if (destination.browserUnbundling) {
-          connectionModes.cloud.web = true
-        }
-        connectionModes.device.web = true
-        break
-      case 'SERVER':
-        connectionModes.cloud.mobile = true
-        if (destination.platforms.server) {
-          connectionModes.cloud.server = true
-        }
-        if (destination.platforms.browser) {
-          connectionModes.cloud.web = true
-        }
-        break
-      case 'CLOUD':
-        connectionModes.cloud.mobile = true
-        if (destination.platforms.server) {
-          connectionModes.cloud.server = true
-        }
-        if (destination.platforms.browser) {
-          connectionModes.cloud.web = true
-        }
-        break
 
+  // if destination has device specific components
+  if (destination.components.length) {
+    destination.components.forEach(component => {
+      switch (component.type) {
+        case 'IOS':
+          connectionModes.device.mobile = true
+          break
+        case 'ANDROID':
+          connectionModes.device.mobile = true
+          break
+        case 'BROWSER':
+          if (destination.browserUnbundling) {
+            connectionModes.cloud.web = true
+          }
+          connectionModes.device.web = true
+          break
+        case 'SERVER':
+          connectionModes.cloud.mobile = true
+          if (destination.platforms.server) {
+            connectionModes.cloud.server = true
+          }
+          if (destination.platforms.browser) {
+            connectionModes.cloud.web = true
+          }
+          break
+        case 'CLOUD':
+          connectionModes.cloud.mobile = true
+          if (destination.platforms.server) {
+            connectionModes.cloud.server = true
+          }
+          if (destination.platforms.browser) {
+            connectionModes.cloud.web = true
+          }
+          break
+      }
+    })
+    // if destination has no device specific components, check for supported platforms
+  } else {
+    if (destination.platforms.browser) {
+      connectionModes.cloud.web = true
     }
-  })
+    if (destination.platforms.mobile) {
+      connectionModes.cloud.mobile = true
+    }
+    if (destination.platforms.server) {
+      connectionModes.cloud.server = true
+    }
+  }
+
   return connectionModes
 }
 
@@ -193,12 +216,13 @@ const updateSources = async () => {
   const regionalSourceRegion = regionalSupport.sources.region
 
   sources.forEach(source => {
-    let slug = slugify(source.name)
+    let slug = slugify(source.name, "sources")
     let settings = source.options
     let hidden = false
     let regions = ['us']
     let endpoints = ['us']
     let mainCategory = source.categories[0] ? source.categories[0].toLowerCase() : ''
+
 
     // determine the doc url based on the source's main category
     if (libraryCategories.includes(mainCategory)) {
@@ -233,32 +257,43 @@ const updateSources = async () => {
     }
 
     // create the catalog metadata
-    let updatedSource = {
-      id: source.id,
-      display_name: source.name,
-      isCloudEventSource: source.isCloudEventSource,
-      slug,
-      url,
-      hidden: isCatalogItemHidden(url),
-      regions,
-      endpoints,
-      source_type: mainCategory,
-      description: source.description,
-      logo: {
-        url: source.logos.default
-      },
-      // mark: {
-      //   url: source.logos.mark
-      // },
-      categories: source.categories,
+    // A lot of test sources are visible in the catalog. We filter them out here.
+    // If they aren't in the testSources array, we add them to the catalog.
+    if (testSources.includes(source.id)) {
+      console.log(`skipped ${source.name}`)
+    } else {
+      let updatedSource = {
+        id: source.id,
+        display_name: source.name,
+        isCloudEventSource: source.isCloudEventSource,
+        slug,
+        url,
+        hidden: isCatalogItemHidden(url),
+        regions,
+        endpoints,
+        source_type: mainCategory,
+        description: source.description,
+        logo: {
+          url: source.logos.default
+        },
+        // mark: {
+        //   url: source.logos.mark
+        // },
+        categories: source.categories,
+      }
+      sourcesUpdated.push(updatedSource)
+      doesCatalogItemExist(updatedSource)
+
     }
-    sourcesUpdated.push(updatedSource)
-    doesCatalogItemExist(updatedSource)
+
+
+
     source.categories.reduce((s, e) => s.add(e), categories);
 
     let updatedRegional = {
       id: source.id,
       display_name: source.name,
+      hidden: isCatalogItemHidden(url),
       slug,
       url,
       regions,
@@ -321,7 +356,6 @@ const updateSources = async () => {
 const updateDestinations = async () => {
   let destinations = []
   let destinationsUpdated = []
-  let regionalDestinationsUpdated = []
   let destinationCategories = []
   let categories = new Set()
   let nextPageToken = "MA=="
@@ -342,25 +376,23 @@ const updateDestinations = async () => {
     return 0;
   })
 
-  const regionalDestinationEndpoints = regionalSupport.destinations.endpoint
-  const regionalDestinationRegions = regionalSupport.destinations.region
-
 
   destinations.forEach(destination => {
-    let endpoints = ['us']
-    let regions = ['us']
+    let endpoints = []
+    let regions = []
 
-    let slug = slugify(destination.name)
+    let slug = slugify(destination.name, "destinations")
 
-    if (regionalDestinationEndpoints.includes(slug)) {
-      endpoints.push('eu')
+    if (typeof destination.supportedRegions != "undefined") {
+      regions = destination.supportedRegions
+    } else {
+      regions.push('us-west-2', 'eu-west-1')
     }
-
-    if (regionalDestinationRegions.includes(slug)) {
-      regions.push('eu')
+    if (typeof destination.regionEndpoints != "undefined") {
+      endpoints = destination.regionEndpoints
+    } else {
+      endpoints.push('US')
     }
-
-
     let url = `connections/destinations/catalog/${slug}`
 
     let tempCategories = [destination.categories]
@@ -405,7 +437,7 @@ const updateDestinations = async () => {
       return clonedObj;
     };
 
-    
+
     // Force screen method into supportedMethods object
     destination.supportedMethods.screen = false
     // Set it true for LiveLike, per request
@@ -448,16 +480,6 @@ const updateDestinations = async () => {
     doesCatalogItemExist(updatedDestination)
     tempCategories.reduce((s, e) => s.add(e), categories)
 
-    let updatedRegionalDestination = {
-      id: destination.id,
-      display_name: destination.name,
-      slug,
-      url,
-      regions,
-      endpoints
-    }
-
-    regionalDestinationsUpdated.push(updatedRegionalDestination)
   })
 
 
@@ -499,13 +521,6 @@ const updateDestinations = async () => {
   }, options);
   fs.writeFileSync(path.resolve(__dirname, `../src/_data/catalog/destination_categories.yml`), output);
 
-  // Append regional destinations to regional file
-  output = yaml.dump({
-    destinations: regionalDestinationsUpdated
-  }, {
-    noArrayIndent: false
-  })
-  fs.appendFileSync(path.resolve(__dirname, `../src/_data/catalog/regional-supported.yml`), output);
   console.log("destinations done")
 }
 

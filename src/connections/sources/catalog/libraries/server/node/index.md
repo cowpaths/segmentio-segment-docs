@@ -5,9 +5,6 @@ repo: analytics-next
 strat: node-js
 ---
 
-> info ""
-> This version of Analytics for Node.js is in beta and Segment is actively working on this feature. Segment's [First-Access and Beta terms](https://segment.com/legal/first-access-beta-preview/) govern this feature. If you’re using the classic version of Analytics for Node.js, you can refer to the documentation [here](/docs/connections/sources/catalog/libraries/server/node/classic).
-
 Segment's Analytics Node.js library lets you record analytics data from your node code. The requests hit Segment's servers, and then Segment routes your data to any destinations you have enabled.
 
 The [Segment Analytics Node.js Next library is open-source](https://github.com/segmentio/analytics-next/tree/master/packages/node){:target="_blank"} on GitHub.
@@ -286,6 +283,7 @@ Setting | Details
 `maxEventsInBatch` _number_ | The number of messages to enqueue before flushing. The default is: `15`
 `flushInterval` _number_ | The number of milliseconds to wait before flushing the queue automatically. The default is: `10000`
 `httpRequestTimeout` | The maximum number of milliseconds to wait for an http request. The default is: `10000`
+`disable` | Disable the analytics library for testing. The default is: `false`
 
 ## Graceful shutdown
 Avoid losing events after shutting down your console. Call `.closeAndFlush()` to stop collecting new events and flush all existing events. If a callback on an event call is included, this also waits for all callbacks to be called, and any of their subsequent promises to be resolved.

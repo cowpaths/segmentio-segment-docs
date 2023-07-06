@@ -40,7 +40,7 @@ The Tracking Plan to Source relationship is a one-to-many relationship. This mea
 
 ### Can I duplicate a Tracking Plan in the Segment UI?
 
-You can duplicate Tracking Plans in the Segment web app by following the [instructions to copy a tracking plan](/docs/protocols/tracking-plan/create/#copy-a-tracking-plan). You can also use the [Tracking Plan API](/docs/protocols/apis-and-extensions/) to copy the underlying JSON schema from one Tracking Plan to another.
+You can duplicate Tracking Plans in the Segment web app by following the [instructions to copy a tracking plan](/docs/protocols/tracking-plan/create/#copy-a-tracking-plan). You can also use the [Public API](/docs/protocols/apis-and-extensions/) to copy the underlying JSON schema from one Tracking Plan to another.
 
 ### How do I handle versioning with mobile apps?
 
@@ -65,6 +65,25 @@ Yes. [Tracking Plan Libraries](/docs/protocols/tracking-plan/libraries/) makes i
 ### Can I copy a Tracking Plan into a library?
 
 No. Unfortunately it's not yet possible to automatically transfer events from a Tracking Plan to Libraries. To import events into a new event library, import them directly from a source.
+
+### Can I transfer a Tracking Plan between production and staging environments?
+
+Yes. Using the [Public API](/docs/protocols/apis-and-extensions/), you can copy the underlying JSON schema from a Tracking Plan in one Workspace to a Tracking Plan in another Workspace. 
+
+If you [discarded events](/docs/protocols/enforce/schema-configuration) as a part of your original Tracking Plan, you must connect to the same Source and configure identical Schema Controls in your other Workspace so that blocked events behave as expected.
+
+### Can I connect a Source to more than one Tracking Plan?
+
+Unfortunately, Sources cannot be connected to more than one Tracking Plan. If you were able to connect more than one Tracking Plan to a Source, it could create conflict if events overlapped. 
+
+### How do Tracking Plans work?
+
+Segment's code uses built-in logic to verify if an event exists in the Tracking Plan. If an event does not exist, it will follow the configuration the [Schema Configuration settings](/docs/protocols/enforce/schema-configuration/) for each source connected to the Tracking Plan.
+
+### Why are my unplanned properties still getting sent to my destinations even though I've set the dropdown to "Omit Properties"?
+
+Unplanned property omission is only supported for cloud-mode destinations. Unplanned properties will not be omitted when they're sent to device-mode destinations.
+
 
 ## Protocols Validation
 
@@ -131,9 +150,13 @@ Only workspace admins are allowed to create transformations.
 
 All users with Protocols admin or read-only permissions can view transformations.
 
-### Why can't we support transformations for device-mode destinations?
+### Why can't Segment support transformations for device-mode destinations?
 
 Transformations introduce advanced logic that at scale may impact performance of client-side libraries. If you are interested in testing new functionality which supports device-mode destination transformations in analytics.js, contact your account rep.
+
+### Are Destination Filters applied before or after my Protocols Transformations?
+
+That depends. If you are working with source-level Transformations, the Protocols conversion will come first. If you are dealing with a destination scoped transformation (which is set to only impact data going to a specific destination), Destination Filters will be applied prior to Protocols Transformations.
 
 ### Why do I need Protocols to use transformations?
 
