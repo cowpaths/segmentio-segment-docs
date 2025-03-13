@@ -24,6 +24,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - name: Ruby
         uses: ruby/setup-ruby@v1
         with:
